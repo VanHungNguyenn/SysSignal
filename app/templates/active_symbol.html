@@ -1,0 +1,52 @@
+{% extends "_index_base_.html" %}
+
+{% block app_content %}
+    <div class="x-container">
+        <div class="mini-container">
+            <h1 style="text-align: center;">ALL ALTIVE SYMBOL</h1>
+            <table class="table">
+                <tr>
+                    <th>No.</th>
+                    <th>Symbol</th>
+                    <th>Mode</th>
+                    <th>Type</th>
+                    <th>Group ID</th>
+                </tr>
+
+                {%  for symbol in ACTIVE_SYMBOL %}
+                    <tr>
+                        <td>{{ symbol['stt'] }}</td>
+                        <td>{{ symbol['symbol'] }}</td>
+                        <td>{{ symbol['mode'] }}</td>
+                        <td style="color: {% if symbol['type']==-1 %}yellow;">Both
+                            {% elif symbol['type']==0 %}var(--color-buy);">Buy
+                            {% elif symbol['type']==1 %}var(--color-sell);">Sell
+                            {% else %}">Disable
+                            {% endif %}
+                        </td>
+                        <td>{{ symbol['id'] }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+            {% if ACTIVE_SYMBOL != [] %}
+                <div class="page_btn">
+                    {% if page['last_page'] != None %}
+                        <button onclick="location.href='{{ url_for('html_active_symbol', page=page['last_page'] + 1) }}'">
+                            ◁ {{ page['last_page'] + 1 }}
+                        </button> |
+                    {% endif %}
+                    <button class="active">
+                        Page {{ page['this_page'] + 1 }}/{{ page['max_page'] }}
+                    </button>
+                    {% if page['this_page'] < page['max_page'] - 1 %} |
+                        {% if page['next_page'] != None %}
+                            <button onclick="location.href='{{ url_for('html_active_symbol', page=page['next_page'] + 1) }}'">
+                                {{ page['next_page'] + 1 }} ▷
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

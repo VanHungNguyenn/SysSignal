@@ -1,0 +1,365 @@
+{% extends "_index_base_.html" %}
+
+{% block app_content %}
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            var group_info = document.getElementById('group_info');
+            var submit_add_group = document.getElementById('submit_add_group');
+            var group_name = document.getElementById('group_name');
+            var group_id = document.getElementById('group_id');
+            var group_link = document.getElementById('group_link');
+            var socket = io();
+
+            function check_telegram(){
+                var data = {"group_id": group_id.value,
+                            "link": group_link.value,
+                            "room": '{{ room_id }}'}
+                group_info.innerHTML = "Checking . . ."
+                submit_add_group.disabled = true;
+                socket.emit('io_check_telegram', data);
+            }
+
+            function check_telegram_form(input_mode){
+                group_info.innerHTML = '';
+                submit_add_group.innerHTML = 'ADD GROUP';
+                submit_add_group.disabled = true;
+                if(input_mode === "GROUP_ID"){group_link.value = '';}
+                if(input_mode === "GROUP_LINK"){group_id.value = '';}
+            }
+            group_id.addEventListener('input', function(){check_telegram_form("GROUP_ID")});
+            group_link.addEventListener('input', function(){check_telegram_form("GROUP_LINK")});
+            $('#check_link').on('click', event => {check_telegram()});
+            $('#check_id').on('click', event => {check_telegram()});
+
+            socket.on('check_tele_result_{{ room_id }}', function(msg, cb){
+                if(msg.is_url){
+
+                    group_id.value = msg.group_id;
+                    group_name.value = msg.title;
+                    // if(!msg.is_member){
+                    //     group_info.innerHTML = '<p>Bot must be channel/group member</p>';
+                    // }
+                    // else{
+                        group_info.innerHTML = '';
+                        submit_add_group.disabled = false;
+                    // }
+                }
+                else{
+                    group_info.innerHTML = '<p>Link / group id not found</p>';
+                }
+            });
+
+            $('form#form_add_group').submit(function(event) {
+                submit_add_group.disabled = true;
+                submit_add_group.innerHTML = "Checking . . ."
+                var data = {
+                     "room": '{{ room_id }}',
+                     "group_id": group_id.value,
+                     "status": "ON"
+                }
+                socket.emit('io_add_group', data);
+                return false;
+            });
+            socket.on('add_group_result_{{ room_id }}', function(msg, cb){
+                submit_add_group.innerHTML = msg.content;
+            });
+
+            $('input:checkbox').on('click', function() {
+                var data = {
+                     "room": '{{ room_id }}',
+                    'status': this.id
+                }
+                socket.emit('io_turn_group', data);
+            });
+
+
+            var data_group = {{ GROUP | safe }};
+            var list_symbol = {{ list_symbol | safe}};
+            var content_group = document.getElementById('content_group');
+            var content_group_type = document.getElementById('content_group_type');
+            var content_group_content = document.getElementById('content_group_content');
+            var submit_group_set = document.getElementById('submit_group_set');
+
+            content_group.addEventListener('input', function(){check_set_content_form("GROUP")});
+            content_group_type.addEventListener('input', function(){check_set_content_form("TYPE")})
+            content_group_content.addEventListener('input', function(){check_set_content_form("CONTENT")});
+            function check_set_content_form(typ){
+                if(typ === "GROUP" && content_group.value !== ""){
+                    content_group_type.disabled = false;
+                    content_group_content.value = "";
+                    content_group_type.value = "";
+                    submit_group_set.innerHTML = "UPDATE";
+                }
+                else if(typ === "TYPE" && content_group_type.value !== ""){
+                    content_group_content.disabled = false;
+                    for(var i = 0; i < data_group.length; i++){
+                        if(data_group[i]['group_id']*1 === content_group.value*1){
+                            content_group_content.value = data_group[i][content_group_type.value];
+                        }
+                    }
+                }
+                submit_group_set.disabled = !(content_group.value !== "" && content_group_type.value !== "" && content_group_content.value !== "");
+            }
+
+            $('form#form_group_content').submit(function(event) {
+                submit_group_set.disabled = true;
+                submit_group_set.innerHTML = "Waiting . . .";
+
+                var data = {
+                     "room": '{{ room_id }}',
+                     'mode': "GROUP",
+                     'group_id': content_group.value,
+                     'type': content_group_type.value,
+                     'content': content_group_content.value
+                }
+                socket.emit('io_set_content', data);
+                return false;
+            });
+            socket.on('set_content_{{ room_id }}', function(msg, cb){
+                submit_group_set.innerHTML = msg.content;
+                content_group_content.value = "";
+                content_group_type.value = "";
+                content_group.value = "";
+            });
+
+
+            var group_symbol = document.getElementById('group_symbol');
+            var lstview = document.getElementById('lstview');
+            var lstview_to = document.getElementById('lstview_to');
+            var submit_group_symbol = document.getElementById('submit_group_symbol');
+            var group_symbol_type = document.getElementById('group_symbol_type');
+            var group_symbol_number = document.getElementById('group_symbol_number');
+            group_symbol.addEventListener('input', function(){
+                $("#lstview").empty();
+                $("#lstview_to").empty();
+                group_symbol_type.disabled = false;
+                group_symbol_number.disabled = false;
+                var symbol_type = 99;
+                for(var sym = 0; sym < list_symbol.length; sym ++){
+                    var is_active = false;
+                    for(var symto = 0; symto < data_group.length; symto ++){
+                        if(data_group[symto]['group_id']*1 === group_symbol.value*1) {
+                            symbol_type = data_group[symto]['trend'];
+                            group_symbol_type.value = symbol_type;
+                            group_symbol_number.value = data_group[symto]['number'];
+                            if (data_group[symto]['active_symbol'].indexOf(list_symbol[sym]) >= 0) {
+                                is_active = true;
+                                lstview_to.add(new Option(list_symbol[sym]));
+
+                                break;
+                            }
+                        }
+                    }
+                    if(!is_active){
+                        lstview.add(new Option(list_symbol[sym]));
+                    }
+                }
+                submit_group_symbol.disabled = false;
+            });
+            $('form#form_group_symbol').submit(function(event) {
+                // console.log(group_symbol.value);
+                // console.log(group_symbol_type.value);
+                // console.log($('#lstview_to').val());
+                var data = {
+                     "room": '{{ room_id }}',
+                     "symbol": $('#lstview_to').val(),
+                     "mode": "GROUP",
+                     "number": $('#group_symbol_number').val(),
+                     "type": group_symbol_type.value,
+                     "id": group_symbol.value
+                }
+                socket.emit('io_active_symbol', data);
+                return false;
+            })
+        });
+    </script>
+    <div class="x-container row">
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <form id="form_add_group" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3 style="text-align: center;">ADD GROUP</h3>
+                        <label for="group_link">Group Link:</label>
+                        <div style="position: relative;">
+                            <input type="text" id="group_link" name="group_link" autocomplete="off">
+                            <div class="input_text"><a href="#" id="check_link">Check link</a></div>
+                        </div>
+                        <label for="group_id">Group ID:</label>
+                        <div style="position: relative;">
+                            <input type="text" id="group_id" name="group_id" required autocomplete="off">
+                            <div class="input_text"><a href="#" id="check_id">Check ID</a></div>
+                        </div>
+
+                        <label for="group_name">Group Name:</label>
+                        <input type="text" id="group_name" name="group_name" required autocomplete="off" disabled>
+                    </div>
+                    <div class="user-box">
+                        <p id="group_info" style="padding-left:20px;"></p>
+                    </div>
+                    <button type="submit" id="submit_add_group" disabled>
+                        ADD GROUP
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <form id="form_group_content" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3 style="text-align: center;">GROUP CONTENT</h3>
+                        <label for="content_group">Select Group:</label>
+                        <select id="content_group" name="content_group">
+                            <option value="" disabled selected hidden>Select group</option>
+                            {% for gr in GROUP %}
+                                <option value="{{ gr['group_id'] }}">{{ gr['group_id'] }} - {{ gr['name'] }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="content_group_type">Select content type:</label>
+                        <select id="content_group_type" name="content_group_type"  disabled>
+                            <option value="" disabled selected hidden>---</option>
+                                <option value="content">Content Signal</option>
+                                <option value="content_tp">Content Take profit</option>
+                                <option value="content_sl">Content Stop loss</option>
+                                <option value="content_cl">Content Close</option>
+                                <option value="content_rp">Content Report</option>
+                                <option value="content_rp_cl">Content Report Closed</option>
+                                <option value="content_rp_run">Content Report Running</option>
+                        </select>
+                        <label for="content_group_content">Content:</label>
+                        <textarea id="content_group_content" name="content_group_content" rows="4" cols="50" disabled placeholder="SELECT TYPE OF CONTENT"></textarea>
+                    </div>
+                    <button type="submit" id="submit_group_set" disabled>
+                        UPDATE
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <form id="form_group_symbol" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3 style="text-align: center;">GROUP SYMBOL ACTIVE</h3>
+                        <label for="group_symbol">Select Group:</label>
+                        <select id="group_symbol" name="group_symbol">
+                            <option value="" disabled selected hidden>Select group</option>
+                            {% for gr in GROUP %}
+                                <option value="{{ gr['group_id'] }}">{{ gr['group_id'] }} - {{ gr['name'] }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="group_symbol_type">Type:</label>
+                        <select id="group_symbol_type" name="group_symbol_type" disabled>
+                            <option value="0">Long</option>
+                            <option value="1">Short</option>
+                            <option value="-1">Both long - short</option>
+                            <option value="99" selected>Disabled</option>
+                        </select>
+                        <label for="group_symbol_number">Number:</label>
+                        <select id="group_symbol_number" name="group_symbol_number" disabled>
+                                <option value="-1" selected>No set bot</option>
+                            {% for bot in GROUP_BOT %}
+                                <option value="{{ bot['stt'] }}">{{ bot['stt'] }} - {{ bot['bot'] }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="row">
+                            <div class="col-xs-5">
+                                <label for="lstview">List symbol:</label>
+                                <select name="from" id="lstview" class="form-control" size="10" multiple="multiple">
+
+                                </select>
+                            </div>
+
+                            <div class="col-xs-2" style="margin-top: 50px;">
+                                <button type="button" id="lstview_rightAll" class="btn btn-default btn-block"><i class="glyphicon glyphicon-forward"></i></button>
+                                <button type="button" id="lstview_rightSelected" class="btn btn-default btn-block"><i class="glyphicon glyphicon-chevron-right"></i></button>
+                                <button type="button" id="lstview_leftSelected" class="btn btn-default btn-block"><i class="glyphicon glyphicon-chevron-left"></i></button>
+                                <button type="button" id="lstview_leftAll" class="btn btn-default btn-block"><i class="glyphicon glyphicon-backward"></i></button>
+
+                            </div>
+
+                            <div class="col-xs-5">
+                                <label for="lstview_to">Active symbol:</label>
+                                <select name="to" id="lstview_to" class="form-control" size="10" multiple="multiple"></select>
+                            </div>
+
+                        </div>
+                    </div>
+                    <button type="submit" id="submit_group_symbol" disabled>
+                        UPDATE
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="x-container">
+        <div class="mini-container">
+            <h1 style="text-align: center;">GROUP</h1>
+            <table class="table">
+                <tr>
+                    <th>No.</th>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Trend</th>
+                    <th>Status</th>
+                </tr>
+
+                {%  for gr in GROUP %}
+                    <tr>
+                        <td>{{ gr['stt'] }}</td>
+                        <td>{{ gr['group_id'] }}</td>
+                        <td>{{ gr['name'] }}</td>
+                        {% if gr['trend']==0 %}<td style="color: var(--color-buy)">Long</td>
+                        {% elif gr['trend']==1 %}<td style="color: var(--color-sell)">Short</td>
+                        {% elif gr['trend']==-1 %}<td style="color: yellow;">Both</td>
+                        {% else %}<td">Disabled</td>{% endif %}">
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" id="TURNGROUP_{{ gr['group_id'] }}" {% if gr['status'] == "ON" %}checked{% endif %}>
+                                <span class="slider round"></span>
+                            </label>
+                        </td>
+
+
+                    </tr>
+                {% endfor %}
+            </table>
+            {% if GROUP != [] %}
+                <div class="page_btn">
+                    {% if page['last_page'] != None %}
+                        {% if user_active %}
+                            <button onclick="location.href='{{ url_for('index', page=page['last_page'] + 1) }}'">
+                        {% else %}
+                            <button onclick="location.href='{{ url_for('html_inactive', page=page['last_page'] + 1) }}'">
+                        {% endif %}
+                            ◁ {{ page['last_page'] + 1 }}
+                        </button> |
+                    {% endif %}
+                    <button class="active">
+                        Page {{ page['this_page'] + 1 }}/{{ page['max_page'] }}
+                    </button>
+                    {% if page['this_page'] < page['max_page'] - 1 %} |
+                        {% if page['next_page'] != None %}
+                            {% if user_active %}
+                                <button onclick="location.href='{{ url_for('index', page=page['next_page'] + 1) }}'">
+                            {% else %}
+                                <button onclick="location.href='{{ url_for('html_inactive', page=page['next_page'] + 1) }}'">
+                            {% endif %}
+                                {{ page['next_page'] + 1 }} ▷
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="/static/js/mutilselect.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+
+            $('#lstview').multiselect();
+        });
+
+    </script>
+{% endblock %}

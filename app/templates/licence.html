@@ -1,0 +1,98 @@
+{% extends "_index_base_.html" %}
+
+{% block app_content %}
+    <script type="text/javascript" charset="utf-8">
+
+            var socket = io();
+
+            function add_licence(ordertime, licence){
+                var data = {"ordertime": ordertime,
+                            "licence": licence}
+                socket.emit('io_confirm_licence', data);
+            }
+
+            socket.on('confirm_licence_result', function(msg, cb){
+                if(msg.status){
+                    var tdconfirm = document.getElementById('confirm_' + msg.ordertime);
+                    if(msg.licence == -1){
+                        tdconfirm.innerHTML = "Deny";
+                        tdconfirm.style.color = "var(--color-sell)";
+                    }
+                    else{
+                        tdconfirm.innerHTML = "Confirmed";
+                        tdconfirm.style.color = "var(--color-buy)";
+                    }
+                }
+                else{
+                    console.log(msg);
+                }
+            });
+    </script>
+    <div class="x-container">
+        <div class="mini-container">
+            <h1 style="text-align: center;">LICENCE</h1>
+            <table class="table">
+                <tr>
+                    <th>No.</th>
+                    <th style="width: 100px;">Time</th>
+                    <th>Tele ID</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Mode</th>
+                    <th>Licence Day</th>
+                    <th style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">Content</th>
+                    <th style="width: 300px;">Confirm</th>
+                </tr>
+
+                {%  for lic in LICENCE %}
+                    <tr>
+                        <td>{{ lic['stt'] }}</td>
+                        <td style="display: none;">{{ lic['ordertime'] }}</td>
+                        <td>{{ lic['full_ordertime'][:19] }}</td>
+                        <td>{{ lic['tele_id'] }}</td>
+                        <td>{{ lic['name'] }}</td>
+                        <td>{{ lic['username'] }}</td>
+                        <td>{{ lic['mode'] }}</td>
+                        <td>{{ lic['licence_day'] }}</td>
+                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">{{ lic['content'] }}</td>
+                        {% if lic['confirm'] == 0 %}
+                            <td id="confirm_{{ lic['ordertime'] }}">
+                                <button onclick="add_licence({{ lic['ordertime'] }}, 1)" style="width: 20px;height: 20px;padding: 0">1d</button>
+                                <button onclick="add_licence({{ lic['ordertime'] }}, 7)" style="width: 20px;height: 20px;padding: 0">7d</button>
+                                <button onclick="add_licence({{ lic['ordertime'] }}, 30)" style="width: 20px;height: 20px;padding: 0">1m</button>
+                                <button onclick="add_licence({{ lic['ordertime'] }}, 90)" style="width: 20px;height: 20px;padding: 0">3m</button>
+                                <button onclick="add_licence({{ lic['ordertime'] }}, 360)" style="width: 20px;height: 20px;padding: 0">1y</button>
+                                <button onclick="add_licence({{ lic['ordertime'] }}, -1)" style="width: 20px;height: 20px;padding: 0; background-color: red; color: yellowgreen; margin-left: 3px;">X</button>
+                            </td>
+                        {% elif lic['confirm'] == -1 %}
+                            <td style="color: var(--color-sell)">Deny</td>
+                        {% else %}
+                            <td style="color: var(--color-buy)">Confirmed</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </table>
+            {% if USER != [] %}
+                <div class="page_btn">
+                    {% if page['last_page'] != None %}
+                        <button onclick="location.href='{{ url_for('html_licence', page=page['last_page'] + 1) }}'">
+                            ◁ {{ page['last_page'] + 1 }}
+                        </button> |
+                    {% endif %}
+                    <button class="active">
+                        Page {{ page['this_page'] + 1 }}/{{ page['max_page'] }}
+                    </button>
+                    {% if page['this_page'] < page['max_page'] - 1 %} |
+                        {% if page['next_page'] != None %}
+                            <button onclick="location.href='{{ url_for('html_licence', page=page['next_page'] + 1) }}'">
+                                {{ page['next_page'] + 1 }} ▷
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+<script>
+</script>
+{% endblock %}

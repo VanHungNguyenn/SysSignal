@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ title }} - {{ project }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+    <meta name="description" content="{{ project }}">
+    <meta name="author" content="{{ project }}">
+    <meta name="google-site-verification" content="cdvO20foQJ-VGZmPvO3GYWe2kxulAtax4kMY4vj4woo" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <meta name="keywords" content="Best Telegram Panel,Telegram Members Main Provider,Buy TeleGram Subscribers,Buy TeleGram Views,Buy TeleGram Vote,Buy TeleGram Members,Buy TeleGram Fake Member,Buy TeleGram Dead Members,TeleGram Reseller Panel, Telegram Service">
+    <meta name="description" content="Best service for Marketing Online. Teleservices.io">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ==" crossorigin="anonymous"></script>
+    <link rel="shortcut icon" type="image/ico" href="/static/img/logo.png">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+    <link href="/static/css/style.css?v={random number/string}" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/68dff742f2.js" crossorigin="anonymous"></script>
+    <link rel="icon" href="/static/favicon.png">
+
+</head>
+
+<body class="theme_dark">
+
+    <div id="header">
+        <div>
+            <div class="logo">
+                <img src="/static/image/svg/add.svg" alt="LOGO" height="100%">
+            </div>
+            <div id="header_menu">
+                <div><a href="{{ url_for('html_group') }}" {% if group %}class="active_menu"{% endif %}><img src = "/static/image/svg/add.svg" alt="Script"/>Group</a></div>
+                <div><a href="{{ url_for('index') }}" {% if user_active %}class="active_menu"{% endif %}><img src = "/static/image/svg/add.svg" alt="Dashboard"/>Active</a></div>
+                <div><a href="{{ url_for('html_inactive') }}" {% if user_inactive %}class="active_menu"{% endif %}><img src = "/static/image/svg/add.svg" alt="Script"/>Inactive</a></div>
+                <div><a href="{{ url_for('html_symbol') }}" {% if symbol %}class="active_menu"{% endif %}><img src = "/static/image/svg/add.svg" alt="Order"/>Symbol</a></div>
+                <div><a href="{{ url_for('html_active_symbol') }}" {% if active_symbol %}class="active_menu"{% endif %}><img src = "/static/image/svg/add.svg" alt="Order"/>Active Symbol</a></div>
+
+                <div><a href="{{ url_for('html_running_signal') }}" {% if running_signal %}class="active_menu"{% endif %}><img src = "/static/image/svg/add.svg" alt="Home"/>Running Signal</a></div>
+                <div><a href="{{ url_for('html_closed_signal') }}" {% if closed_signal %}class="active_menu"{% endif %}><img src = "/static/image/svg/add.svg" alt="Home"/>Closed Signal</a></div>
+
+                <div><a href="{{ url_for('html_licence') }}" {% if licence %}class="active_menu"{% endif %}><img src="/static/image/svg/add.svg" alt="Service"/>Licence</a></div>
+                <div><a href="" {% if licence %}class="active_menu"{% endif %}><img src="/static/image/svg/add.svg" alt="Service"/>Report</a></div>
+
+            </div>
+            <div style="float: right;" id="setting"><a onclick="toggle_menu()"><img src="/static/image/svg/add.svg" alt="Setting"/></a></div>
+        </div>
+    </div>
+
+    <div id="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+            <div id="flashed" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+        {% block app_content %}
+        {% endblock %}
+
+    </div>
+
+
+    <footer>
+        <div style="float: right; padding: 3px 20px 0 0;">2022 © {{ project }}</div>
+    </footer>
+</body>
+<script>
+    function toggle_menu() {
+        var x = document.getElementById("header_menu");
+        if (x.style.display === "inline-block") {
+            x.style.display = "none";
+        } else {
+            x.style.display = "inline-block";
+        }
+    }
+</script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-E050T54JNN"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-E050T54JNN');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2016273711932820"
+     crossorigin="anonymous"></script>
+</html>

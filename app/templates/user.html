@@ -1,0 +1,370 @@
+{% extends "_index_base_.html" %}
+
+{% block app_content %}
+    <script type="text/javascript" charset="utf-8">
+
+        $(document).ready(function() {
+            var btn_submit_status_all = document.getElementById('submit_status_all');
+            var btn_submit_test_signal = document.getElementById('submit_test_signal');
+            var socket = io();
+
+            $('form#form_user_status_all').submit(function(event) {
+                var data = {"new_status": document.getElementById('new_status_all').value}
+                socket.emit('io_change_user_status', data);
+                btn_submit_status_all.disabled = true;
+                return false;
+            });
+            socket.on('status_all_user', function(msg, cb){
+                var list_user_status = document.getElementsByClassName('user_status');
+                for(var i = 0; i < list_user_status.length; i++){
+                    if(msg.status === 'ON'){
+                        list_user_status[i].style.color = 'var(--color-buy)';
+                    }
+                    else{
+                        list_user_status[i].style.color = 'var(--color-sell)';
+                    }
+                    list_user_status[i].innerText = msg.status;
+                }
+            });
+
+            $('form#form_test_signal').submit(function(event) {
+                var data = {"signal": document.getElementById('signal').value}
+                socket.emit('io_test_signal', data);
+                btn_submit_test_signal.disabled = true;
+                return false;
+            });
+            socket.on('status_test_signal', function(msg, cb){
+                if(msg.status){
+                    document.getElementById('signal').value = "Done"
+                }
+            });
+
+
+            {% if user_active %}
+                $('form#form_alert_symbol').submit(function(event) {
+                    var data = {
+                         "room": '{{ room_id }}',
+                         "symbol": $('#lstview_to').val(),
+                         "mode": "ALERT",
+                         "number": 0,
+                         "type": $('#user_symbol_type').val(),
+                         "id": 0
+                    }
+                    socket.emit('io_active_symbol', data);
+                    return false;
+                });
+
+                var submit_user_content = document.getElementById('submit_user_content');
+                var content_type = document.getElementById('content_type');
+                var content_content = document.getElementById('content_content');
+                var user_content = {{ USER_CONTENT | safe }};
+
+                content_type.addEventListener('input', function(){check_set_content_form()});
+                function check_set_content_form(){
+                    content_content.value = user_content[content_type.value];
+                }
+
+                $('form#form_user_content').submit(function(event) {
+                    submit_user_content.disabled = true;
+                    submit_user_content.innerHTML = "Waiting . . .";
+
+                    var data = {
+                         "room": '{{ room_id }}',
+                         'mode': "ALERT",
+                         'group_id': 0,
+                         'type': content_type.value,
+                         'content': content_content.value
+                    }
+                    socket.emit('io_set_content', data);
+                    return false;
+                });
+            {% endif %}
+
+            var submit_send_message = document.getElementById('submit_send_message');
+            var send_result = document.getElementById("send_result");
+            $('form#form_send_message').submit(function(event) {
+                submit_send_message.disabled = true;
+                submit_send_message.innerHTML = "Waiting . . .";
+
+                var data = {
+                     "room": '{{ room_id }}',
+                     'content': $('#send_content').val(),
+                     'mode': $('#send_to').val(),
+                     'user': $('#send_id').val()
+                }
+                socket.emit('io_send_message', data);
+                return false;
+            });
+
+            socket.on('confirm_send_message_{{ room_id }}', function(msg, cb){
+                submit_send_message.disabled = false;
+                submit_send_message.innerHTML = "SEND";
+                send_result.innerHTML = msg.content;
+            });
+
+            var add_licence_id = document.getElementById('add_licence_id');
+            var add_licence = document.getElementById('add_licence');
+            var submit_add_licence = document.getElementById('submit_add_licence');
+            $('form#form_add_licence').submit(function(event) {
+                submit_add_licence.disabled = true;
+                submit_add_licence.innerHTML = "Waiting . . .";
+
+                var data = {
+                     'id': add_licence_id.value,
+                     'licence': add_licence.value
+                }
+                socket.emit('io_add_licence', data);
+                return false;
+            });
+
+            socket.on('result_add_licence', function(msg, cb){
+                submit_add_licence.disabled = false;
+                submit_add_licence.innerHTML = msg.content;
+            });
+
+        });
+    </script>
+    <div class="x-container row">
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <form id="form_test_signal" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3>Signal text:</h3>
+                        <div class="user-box">
+                            <input type="text" id="signal" name="signal" required autocomplete="off">
+                        </div>
+                    </div>
+                    <button type="submit" id="submit_test_signal" disabled>
+                        SEND SIGNAL
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <form id="form_add_licence" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3>ADD LICENCE:</h3>
+                        <label for="add_licence_id">Type:</label>
+                        <div class="user-box">
+                            <input type="number" id="add_licence_id" name="add_licence_id" required autocomplete="off">
+                        </div>
+                        <label for="add_licence">Licence:</label>
+                        <div class="user-box">
+                            <input type="number" id="add_licence" name="add_licence" required autocomplete="off">
+                        </div>
+                    </div>
+                    <button type="submit" id="submit_add_licence" >
+                        SEND LICENCE
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <form id="form_user_status_all" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3>Change status:</h3>
+                        <select id="new_status_all" name="new_status_all">
+                            <option value="" disabled selected hidden>Select new status for all</option>
+                            {% for status in ['ON', 'OFF'] %}
+                                <option value="{{ status }}">{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" id="submit_status_all" disabled>
+                        UPDATE STATUS
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% if user_active %}
+        <div class="x-container row">
+            <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <form id="form_alert_symbol" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3 style="text-align: center;">USER SYMBOL ACTIVE</h3>
+                        <label for="user_symbol_type">Type:</label>
+                        <select id="user_symbol_type" name="user_symbol_type">
+                            <option value="0" {% if USER_TREND == 0 %}selected{% endif %}>Long</option>
+                            <option value="1" {% if USER_TREND == 1 %}selected{% endif %}>Short</option>
+                            <option value="-1" {% if USER_TREND == -1 %}selected{% endif %}>Both long - short</option>
+                            <option value="99" {% if USER_TREND == 99 %}selected{% endif %}>Disabled</option>
+                        </select>
+                        <div class="row">
+                            <div class="col-xs-5">
+                                <label for="lstview">List symbol:</label>
+                                <select name="from" id="lstview" class="form-control" size="10" multiple="multiple">
+                                    {% for symbol in LIST_SYMBOL_NOT %}
+                                        <option value="{{ symbol }}">{{ symbol }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-xs-2" style="margin-top: 50px;">
+                                <button type="button" id="lstview_rightAll" class="btn btn-default btn-block"><i class="glyphicon glyphicon-forward"></i></button>
+                                <button type="button" id="lstview_rightSelected" class="btn btn-default btn-block"><i class="glyphicon glyphicon-chevron-right"></i></button>
+                                <button type="button" id="lstview_leftSelected" class="btn btn-default btn-block"><i class="glyphicon glyphicon-chevron-left"></i></button>
+                                <button type="button" id="lstview_leftAll" class="btn btn-default btn-block"><i class="glyphicon glyphicon-backward"></i></button>
+
+                            </div>
+
+                            <div class="col-xs-5">
+                                <label for="lstview_to">Active symbol:</label>
+                                <select name="to" id="lstview_to" class="form-control" size="10" multiple="multiple">
+                                    {% for symbol in USER_SYMBOL %}
+                                        <option value="{{ symbol }}">{{ symbol }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+                    <button type="submit" id="submit_alert_symbol">
+                        UPDATE
+                    </button>
+                </form>
+            </div>
+        </div>
+            <div class="col-sm-6 col-xs-6">
+                <div class="mini-container">
+                    <form id="form_user_content" method="POST" action='#'>
+                        <div class="user-box">
+                            <h3 style="text-align: center;">USER CONTENT</h3>
+                            <label for="content_type">Select content type:</label>
+                            <select id="content_type" name="content_type">
+                                <option value="" disabled selected hidden>---</option>
+                                    <option value="content">Content Signal</option>
+                                    <option value="content_sl">Content Stop loss</option>
+                                    <option value="content_tp">Content Take profit</option>
+                                    <option value="content_cl">Content Close</option>
+                                    <option value="content_rp">Content Report</option>
+                                    <option value="content_rp_cl">Content Report Closed</option>
+                                    <option value="content_rp_run">Content Report Running</option>
+                            </select>
+                            <label for="content_content">Content:</label>
+                            <textarea id="content_content" name="content_content" rows="9" cols="50" placeholder="Input content here"></textarea>
+                        </div>
+                        <button type="submit" id="submit_user_content">
+                            UPDATE
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    <div class="x-container row">
+        <div class="col-xs-6 col-sm-6">
+            <div class="mini-container">
+                <form id="form_send_message" method="POST" action='#'>
+                    <div class="user-box">
+                        <h3 style="text-align: center;">SEND MESSAGE</h3>
+                        <label for="send_to">Send to:</label>
+                        <select id="send_to" name="send_to">
+                            <option value="active">🟢 Active user</option>
+                            <option value="inactive">⭕ Inactive user</option>
+                            <option value="one">1⃣  User by ID</option>
+                        </select>
+                        <label for="send_id">Telegrarm ID:</label>
+                        <input type="text" id="send_id" name="send_id" autocomplete="off">
+
+                        <label for="send_content">Content:</label>
+                        <textarea id="send_content" name="send_content" rows="9" cols="50" placeholder="Input content here"></textarea>
+                    </div>
+                    <div id="send_result"></div>
+                    <button type="submit" id="submit_send_message">
+                        SEND
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="x-container">
+        <div class="mini-container">
+            <h1 style="text-align: center;">USER {% if user_active %}ACTIVE{% else %}INACTIVE{% endif %}</h1>
+            <table class="table">
+                <tr>
+                    <th>No.</th>
+                    <th>TeleID</th>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Join</th>
+                    <th>Start</th>
+                    <th>Licence</th>
+                    <th>Status</th>
+
+                </tr>
+
+                {%  for user in USER %}
+                    <tr>
+                        <td>{{ user['stt'] }}</td>
+                        <td>{{ user['tele_id'] }}</td>
+                        <td>{{ user['username'] }}</td>
+                        <td>{{ user['name'] }}</td>
+                        <td>{{ user['join_date'] }}</td>
+                        <td>{{ user['licence_start'] }}</td>
+                        <td {% if user_active %}style="color: var(--color-buy);"{% endif %}>{{ user['licence'] }}</td>
+                        <td class="user_status" style="color:{% if user['status']== 'ON' %}var(--color-buy){% else %} var(--color-sell){% endif %};">{{ user['status'] }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+            {% if USER != [] %}
+                <div class="page_btn">
+                    {% if page['last_page'] != None %}
+                        {% if user_active %}
+                            <button onclick="location.href='{{ url_for('index', page=page['last_page'] + 1) }}'">
+                        {% else %}
+                            <button onclick="location.href='{{ url_for('html_inactive', page=page['last_page'] + 1) }}'">
+                        {% endif %}
+                            ◁ {{ page['last_page'] + 1 }}
+                        </button> |
+                    {% endif %}
+                    <button class="active">
+                        Page {{ page['this_page'] + 1 }}/{{ page['max_page'] }}
+                    </button>
+                    {% if page['this_page'] < page['max_page'] - 1 %} |
+                        {% if page['next_page'] != None %}
+                            {% if user_active %}
+                                <button onclick="location.href='{{ url_for('index', page=page['next_page'] + 1) }}'">
+                            {% else %}
+                                <button onclick="location.href='{{ url_for('html_inactive', page=page['next_page'] + 1) }}'">
+                            {% endif %}
+                                {{ page['next_page'] + 1 }} ▷
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        var element_test_signal = document.getElementById("signal");
+        element_test_signal.addEventListener("input", test_signal);
+        function test_signal(){
+            var element_submit_test_signal = document.getElementById("submit_test_signal");
+            element_submit_test_signal.disabled = element_test_signal.value === '';
+        }
+
+        var element_status_all = document.getElementById("new_status_all");
+        element_status_all.addEventListener("input", select_status_all);
+        function select_status_all(){
+            var element_submit_status_all = document.getElementById("submit_status_all");
+            element_submit_status_all.disabled = element_status_all.value === '';
+        }
+
+    </script>
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="/static/js/mutilselect.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+
+            $('#lstview').multiselect();
+        });
+
+    </script>
+{% endblock %}

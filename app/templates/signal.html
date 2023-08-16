@@ -1,0 +1,206 @@
+{% extends "_index_base_.html" %}
+
+{% block app_content %}
+
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            var socket = io();
+
+            {% if running_signal %}
+                var submit_send_report = document.getElementById("submit_send_report");
+                var send_result = document.getElementById("send_result");
+                var send_report = document.getElementById("send_report");
+                $('form#form_send_signal_report').submit(function(event) {
+                    send_result.innerHTML = "";
+                    send_report.innerHTML = "";
+                    submit_send_report.disabled = true;
+                    submit_send_report.innerText = "Checking . .. ";
+                    var data = {
+                         "room": '{{ room_id }}',
+                         "content_type": $('#content_type').val(),
+                         "target": $('#send_target').val(),
+                         "date_from": $('#date_from').val(),
+                         "date_to": $('#date_to').val(),
+                         "mode": $('#send_mode').val(),
+                         "send_end": $('#send_end_content').val(),
+                         "end_content": $('#end_content').val(),
+                    }
+                    socket.emit('io_send_report', data);
+                    return false;
+                })
+
+                socket.on('send_content_result_{{ room_id }}', function(msg, cb){
+                    if(!msg.status){
+                        submit_send_report.innerText = msg.content;
+                    }
+                    else{
+                        submit_send_report.disabled = false;
+                        send_result.innerHTML = msg.content_html;
+                        send_report.innerHTML = msg.send_result;
+
+                    }
+                });
+
+            {% endif %}
+        });
+    </script>
+    <div class="x-container row">
+        {% if running_signal %}
+            <div class="col-sm-6 col-xs-6">
+                <div class="mini-container">
+                    <form id="form_send_signal_report" method="POST" action='#'>
+                        <div class="user-box">
+                            <h3 style="text-align: center;">SEND SIGNAL REPORT</h3>
+
+                            <label for="content_type">Select content type:</label>
+                            <select id="content_type" name="content_type">
+                                <option value="content_rp">Content Report</option>
+                                <option value="content_rp_cl">Content Report Closed</option>
+                                <option value="content_rp_run">Content Report Running</option>
+                            </select>
+
+                            <label for="send_target">Select send target:</label>
+                            <select id="send_target" name="send_target">
+                                <option value="alert:active">🟢 User alert - Active</option>
+                                <option value="alert:inactive">⭕ User alert - Inactive</option>
+                                {% for group in GROUP %}
+                                    <option value="group:{{ group['id'] }}">{{ group['id'] }} - {{ group['name'] }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label for="date_from">Date from:</label>
+                            <input type="date" id="date_from" name="date_from" required autocomplete="off">
+
+                            <label for="date_to">Date to:</label>
+                            <input type="date" id="date_to" name="date_to" required autocomplete="off">
+
+                            <label for="send_mode">Select mode (now / test):</label>
+                            <select id="send_mode" name="send_mode">
+                                <option value="NOW">🟢 Send Now</option>
+                                <option value="TEST" selected>⭕ Send to test group</option>
+                            </select>
+                            <label for="send_end_content">Send End content:</label>
+                            <select id="send_end_content" name="send_end_content">
+                                <option value="SEND">🟢 Send</option>
+                                <option value="NOT_SEND" selected>⭕ No Send</option>
+                            </select>
+                            <label for="end_content"></label>
+                            <textarea id="end_content" name="end_content" rows="10"   placeholder="SET CONTENT">
+                                👆👆<b>[total_signal] Signals Closed on [to_date].</b>
+
+                                🏆 Win: <b>[total_win] signals.</b>
+                                ❌ Loss: <b>[total_loss] signals.</b>
+
+                                Profit earned:
+                                <b>[total_percent] using 10x leverage.</b>
+                                <b>[total_percent_2x] using 20x leverage.</b>
+                                #Report
+                            </textarea>
+                        </div>
+                        <button type="submit" id="submit_send_report">
+                            SEND
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xs-6">
+                <div id="send_report" style="color: red;"></div>
+                <div id="send_result"></div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="x-container">
+        <div class="mini-container">
+            <h1 style="text-align: center;">{% if running_signal %}RUNNING{% else %}CLOSED{% endif %} SIGNAL</h1>
+            
+            
+            <label for="date_from">Date from:</label>
+            <input type="date" id="date_from" name="date_from" required autocomplete="off">
+            <label for="date_to">Date to:</label>       
+            <input type="date" id="date_to" name="date_to" required autocomplete="off">
+            <button id="filter_button">Apply Filter</button>
+
+            <table class="table">
+                <tr>
+                    <th>No.</th>
+                    <th>Time</th>
+                    <th>Symbol</th>
+                    <th>Type</th>
+                    <th>Entry 1</th>
+                    <th>Entry 2</th>
+                    <th>SL</th>
+                    <th>TP 1</th>
+                    <th>TP 2</th>
+                    <th>TP 3</th>
+                    <th>TP 4</th>
+                    <th>TP 5</th>
+                    <th>TP 6</th>
+                    <th>Close</th>
+
+                </tr>
+
+                {%  for signal in SIGNAL %}
+                    <tr>
+                        <td>{{ signal['stt'] }}</td>
+                        <td>{{ signal['full_opentime'][:19] }}</td>
+                        <td>{{ signal['symbol'] }}</td>
+                        <td>{% if signal['ordertype'] == 0 %}🟢{% else %}🔴{% endif %}</td>
+                        <td>{{ signal['entry_1'] }}</td>
+                        <td>{{ signal['entry_2'] }}</td>
+                        <td style="color: var(--color-sell);{% if signal['sl_hit'] == "ON" %}background-color: var(--color-sell-trans);{% endif %}">{{ signal['sl'] }}</td>
+                        <td style="color: var(--color-buy);{% if signal['tp1_hit'] == "ON" %}background-color: var(--color-buy-trans);{% endif %}">{{ signal['tp1'] }}</td>
+                        <td style="color: var(--color-buy);{% if signal['tp2_hit'] == "ON" %}background-color: var(--color-buy-trans);{% endif %}">{{ signal['tp2'] }}</td>
+                        <td style="color: var(--color-buy);{% if signal['tp3_hit'] == "ON" %}background-color: var(--color-buy-trans);{% endif %}">{{ signal['tp3'] }}</td>
+                        <td style="color: var(--color-buy);{% if signal['tp4_hit'] == "ON" %}background-color: var(--color-buy-trans);{% endif %}">{{ signal['tp4'] }}</td>
+                        <td style="color: var(--color-buy);{% if signal['tp5_hit'] == "ON" %}background-color: var(--color-buy-trans);{% endif %}">{{ signal['tp5'] }}</td>
+                        <td style="color: var(--color-buy);{% if signal['tp6_hit'] == "ON" %}background-color: var(--color-buy-trans);{% endif %}">{{ signal['tp6'] }}</td>
+                        <td style="color: var(--color-sell);">{% if signal['close_price'] != 0 %}{{ signal['close_price'] }}{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+            {% if USER != [] %}
+                <div class="page_btn">
+                    {% if page['last_page'] != None %}
+                        {% if running_signal %}
+                            <button onclick="location.href='{{ url_for('html_running_signal', page=page['last_page'] + 1) }}'">
+                        {% else %}
+                            <button onclick="location.href='{{ url_for('html_closed_signal', page=page['last_page'] + 1) }}'">
+                        {% endif %}
+                            ◁ {{ page['last_page'] + 1 }}
+                        </button> |
+                    {% endif %}
+                    <button class="active">
+                        Page {{ page['this_page'] + 1 }}/{{ page['max_page'] }}
+                    </button>
+                    {% if page['this_page'] < page['max_page'] - 1 %} |
+                        {% if page['next_page'] != None %}
+                            {% if running_signal %}
+                                <button onclick="location.href='{{ url_for('html_running_signal', page=page['next_page'] + 1) }}'">
+                            {% else %}
+                                <button onclick="location.href='{{ url_for('html_closed_signal', page=page['next_page'] + 1) }}'">
+                            {% endif %}
+                                {{ page['next_page'] + 1 }} ▷
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+  
+    <script>
+        document.getElementById("filter_button").addEventListener("click", function () {
+            var dateFrom = document.getElementById("date_from").value;
+            var dateTo = document.getElementById("date_to").value;
+            
+            console.log(dateFrom, dateTo);
+
+            // Gửi yêu cầu lọc đến máy chủ bằng cách thay đổi URL dựa trên khoảng thời gian đã chọn
+            var url = "{% if running_signal %}{{ url_for('html_running_signal') }}{% else %}{{ url_for('html_closed_signal') }}{% endif %}";
+            url += "?date_from=" + dateFrom + "&date_to=" + dateTo;
+            
+            // Chuyển hướng trình duyệt đến URL mới để hiển thị tín hiệu lọc
+            window.location.href = url;
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "_index_base_.html" %}
+
+{% block app_content %}
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            var socket = io();
+
+            var set_default_symbol = document.getElementById('set_default_symbol');
+            $('#set_default_symbol').on('click', event => {
+                set_default_symbol.disabled = true;
+                set_default_symbol.innerHTML = "Setting . . .";
+                var data = {"room": '{{ room_id }}'};
+                socket.emit('io_set_default_symbol', data);
+            });
+
+            socket.on('set_default_symbol_{{ room_id }}', function(msg, cb){
+                set_default_symbol.innerHTML = "DONE";
+            });
+
+            var list_symbol = {{ SYMBOLS | safe }};
+            var input_symbol = document.getElementById("add_symbol");
+            var add_symbol_max_leverage = document.getElementById("add_symbol_max_leverage");
+            var add_symbol_entry_2 = document.getElementById("add_symbol_entry_2");
+            var add_symbol_tp1 = document.getElementById("add_symbol_tp1");
+            var add_symbol_tp2 = document.getElementById("add_symbol_tp2");
+            var add_symbol_tp3 = document.getElementById("add_symbol_tp3");
+            var add_symbol_tp4 = document.getElementById("add_symbol_tp4");
+            var add_symbol_tp5 = document.getElementById("add_symbol_tp5");
+            var add_symbol_tp6 = document.getElementById("add_symbol_tp6");
+            var add_symbol_sl = document.getElementById("add_symbol_sl");
+            var add_symbol_digit = document.getElementById("add_symbol_digit");
+            var submit_add_symbol = document.getElementById("submit_add_symbol");
+
+            input_symbol.addEventListener('input', function(){check_set_content_symbols()});
+            function check_set_content_symbols(){
+                if(input_symbol.value !== ""){
+                    add_symbol_max_leverage.disabled = add_symbol_entry_2.disabled = add_symbol_tp1.disabled
+                     = add_symbol_tp2.disabled = add_symbol_tp3.disabled = add_symbol_tp4.disabled = add_symbol_tp5.disabled
+                     = add_symbol_tp6.disabled = add_symbol_sl.disabled = add_symbol_digit.disabled
+                     = submit_add_symbol.disabled = false;
+                    submit_add_symbol.innerText = "Add Symbol";
+                    add_symbol_max_leverage.value = add_symbol_entry_2.value = add_symbol_tp1.value =
+                        add_symbol_tp2.value = add_symbol_tp3.value = add_symbol_tp4.value =
+                        add_symbol_tp5.value = add_symbol_tp6.value =
+                        add_symbol_sl.value = add_symbol_digit.value = "";
+                    for(var i = 0; i < list_symbol.length; i++){
+                        if(input_symbol.value === list_symbol[i].symbol){
+                            submit_add_symbol.innerText = "Update Symbol";
+                            add_symbol_max_leverage.value = list_symbol[i].max_leverage;
+                            add_symbol_entry_2.value = list_symbol[i].entry_2;
+                            add_symbol_tp1.value = list_symbol[i].tp1;
+                            add_symbol_tp2.value = list_symbol[i].tp2;
+                            add_symbol_tp3.value = list_symbol[i].tp3;
+                            add_symbol_tp4.value = list_symbol[i].tp4;
+                            add_symbol_tp5.value = list_symbol[i].tp5;
+                            add_symbol_tp6.value = list_symbol[i].tp6;
+                            add_symbol_sl.value = list_symbol[i].sl;
+                            add_symbol_digit.value = list_symbol[i].digit;
+                        }
+                    }
+                }
+                else{
+                    add_symbol_max_leverage.disabled = add_symbol_entry_2.disabled = add_symbol_tp1.disabled
+                     = add_symbol_tp2.disabled = add_symbol_tp3.disabled = add_symbol_tp4.disabled = add_symbol_tp5.disabled
+                     = add_symbol_tp6.disabled = add_symbol_sl.disabled = add_symbol_digit.disabled
+                     = submit_add_symbol.disabled = true;
+                    add_symbol_max_leverage.value = add_symbol_entry_2.value = add_symbol_tp1.value =
+                        add_symbol_tp2.value = add_symbol_tp3.value = add_symbol_tp4.value =
+                        add_symbol_tp5.value = add_symbol_tp6.value =
+                        add_symbol_sl.value = add_symbol_digit.value = "";
+                }
+            }
+
+            $('form#form_add_symbol').submit(function(event) {
+                var data = {
+                    "room": '{{ room_id }}',
+                    "symbol": input_symbol.value,
+                    "leverage": add_symbol_max_leverage.value,
+                    "entry_2": add_symbol_entry_2.value,
+                    "tp1": add_symbol_tp1.value,
+                    "tp2": add_symbol_tp2.value,
+                    "tp3": add_symbol_tp3.value,
+                    "tp4": add_symbol_tp4.value,
+                    "tp5": add_symbol_tp5.value,
+                    "tp6": add_symbol_tp6.value,
+                    "sl": add_symbol_sl.value,
+                    "digit": add_symbol_digit.value,
+                }
+                submit_add_symbol.disabled = true;
+                socket.emit('io_update_symbol', data);
+                return false;
+            });
+            socket.on('set_update_symbol_{{ room_id }}', function(msg, cb){
+                submit_add_symbol.innerText = msg.content;
+            });
+        });
+    </script>
+    <div class="x-container row">
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+                <button id="set_default_symbol">SET DEFAULT SYMBOL</button>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xs-6">
+            <div class="mini-container">
+
+                <form id="form_add_symbol" method="POST" action='#'>
+                    <label for="add_symbol">Update symbol:</label>
+                    <div style="position: relative;">
+                        <input type="text" id="add_symbol" name="group_link" list="add_symbols" autocomplete="off">
+                        <datalist id="add_symbols">
+                            {% for sym in SYMBOLS %}
+                                <option value="{{ sym['symbol'] }}">{{ sym['symbol'] }}</option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_max_leverage">Max Leverage:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_max_leverage" name="add_symbol_max_leverage" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_entry_2">Entry 2:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_entry_2" name="add_symbol_entry_2" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_tp1">TP 1:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_tp1" name="add_symbol_tp1" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_tp2">TP 2:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_tp2" name="add_symbol_tp2" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_tp3">TP 3:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_tp3" name="add_symbol_tp3" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_tp4">TP 4:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_tp4" name="add_symbol_tp4" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_tp5">TP 5:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_tp5" name="add_symbol_tp5" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_tp6">TP 6:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_tp6" name="add_symbol_tp6" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_sl">Stop loss:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_sl" name="add_symbol_sl" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xs-6">
+                            <label for="add_symbol_digit">Digit:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="add_symbol_digit" name="add_symbol_digit" autocomplete="off" disabled>
+                            </div>
+                        </div>
+                        <div class="col-sm-12 col-xs-12">
+                            <button type="submit" id="submit_add_symbol" disabled>
+                                ADD Symbol
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+
+            </div>
+        </div>
+
+    </div>
+    <div class="x-container">
+        <div class="mini-container">
+            <h1 style="text-align: center;">SYMBOL DETAIL</h1>
+            <table class="table">
+                <tr>
+                    <th>No.</th>
+                    <th>Symbol</th>
+                    <th>Max leverage</th>
+                    <th>Entry 2</th>
+                    <th>TP 1</th>
+                    <th>TP 2</th>
+                    <th>TP 3</th>
+                    <th>TP 4</th>
+                    <th>TP 5</th>
+                    <th>TP 6</th>
+                    <th>SL</th>
+                    <th>Digit</th>
+
+                </tr>
+
+                {%  for sym in SYMBOL %}
+                    <tr style="background-color: {% if sym['digit'] == None %}var(--color-sell-trans){% endif %}">
+                        <td>{{ sym['stt'] }}</td>
+                        <td>{{ sym['symbol'] }}</td>
+                        <td>{{ sym['entry_2'] }}</td>
+                        <td>{{ sym['max_leverage'] }}</td>
+                        <td>{{ sym['tp1'] }}</td>
+                        <td>{{ sym['tp2'] }}</td>
+                        <td>{{ sym['tp3'] }}</td>
+                        <td>{{ sym['tp4'] }}</td>
+                        <td>{{ sym['tp5'] }}</td>
+                        <td>{{ sym['tp6'] }}</td>
+                        <td>{{ sym['sl'] }}</td>
+                        <td>{{ sym['digit'] }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+            {% if USER != [] %}
+                <div class="page_btn">
+                    {% if page['last_page'] != None %}
+                        <button onclick="location.href='{{ url_for('html_symbol', page=page['last_page'] + 1) }}'">
+                            ◁ {{ page['last_page'] + 1 }}
+                        </button> |
+                    {% endif %}
+                    <button class="active">
+                        Page {{ page['this_page'] + 1 }}/{{ page['max_page'] }}
+                    </button>
+                    {% if page['this_page'] < page['max_page'] - 1 %} |
+                        {% if page['next_page'] != None %}
+                            <button onclick="location.href='{{ url_for('html_symbol', page=page['next_page'] + 1) }}'">
+                                {{ page['next_page'] + 1 }} ▷
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
