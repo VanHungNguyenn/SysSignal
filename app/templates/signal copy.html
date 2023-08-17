@@ -119,7 +119,6 @@
             <label for="date_to">Date to:</label>       
             <input type="date" id="date_to" name="date_to" required autocomplete="off">
             <button id="filter_button">Apply Filter</button>
-            <button id="clear_button">Clear Filter</button>
 
             <table class="table">
                 <tr>
@@ -162,11 +161,10 @@
             {% if USER != [] %}
                 <div class="page_btn">
                     {% if page['last_page'] != None %}
-                        {% set url_args = page['url_args'].copy() %}
                         {% if running_signal %}
-                            <button onclick="location.href='{{ url_for('html_running_signal', page=page['last_page'] + 1, **url_args) }}'">
+                            <button onclick="location.href='{{ url_for('html_running_signal', page=page['last_page'] + 1) }}'">
                         {% else %}
-                            <button onclick="location.href='{{ url_for('html_closed_signal', page=page['last_page'] + 1, **url_args) }}'">
+                            <button onclick="location.href='{{ url_for('html_closed_signal', page=page['last_page'] + 1) }}'">
                         {% endif %}
                             ◁ {{ page['last_page'] + 1 }}
                         </button> |
@@ -176,18 +174,17 @@
                     </button>
                     {% if page['this_page'] < page['max_page'] - 1 %} |
                         {% if page['next_page'] != None %}
-                            {% set url_args = page['url_args'].copy() %}
                             {% if running_signal %}
-                                <button onclick="location.href='{{ url_for('html_running_signal', page=page['next_page'] + 1, **url_args) }}'">
+                                <button onclick="location.href='{{ url_for('html_running_signal', page=page['next_page'] + 1) }}'">
                             {% else %}
-                                <button onclick="location.href='{{ url_for('html_closed_signal', page=page['next_page'] + 1, **url_args) }}'">
+                                <button onclick="location.href='{{ url_for('html_closed_signal', page=page['next_page'] + 1) }}'">
                             {% endif %}
                                 {{ page['next_page'] + 1 }} ▷
                             </button>
                         {% endif %}
                     {% endif %}
                 </div>
-            {% endif %}
+            {% endif %} 
         </div>
     </div>
   
@@ -199,47 +196,9 @@
             // Gửi yêu cầu lọc đến máy chủ bằng cách thay đổi URL dựa trên khoảng thời gian đã chọn
             var url = "{% if running_signal %}{{ url_for('html_running_signal') }}{% else %}{{ url_for('html_closed_signal') }}{% endif %}";
             url += "?date_from=" + dateFrom + "&date_to=" + dateTo;
-
             
             // Chuyển hướng trình duyệt đến URL mới để hiển thị tín hiệu lọc
             window.location.href = url;
         });
-
-        var clearButton = document.getElementById("clear_button");
-
-        clearButton.addEventListener("click", function () {
-            localStorage.removeItem("date_from");
-            localStorage.removeItem("date_to");
-
-            var url = "{% if running_signal %}{{ url_for('html_running_signal') }}{% else %}{{ url_for('html_closed_signal') }}{% endif %}";
-            
-            window.location.href = url;
-        });
-
-        // Lưu trạng thái của ngày tháng sau mỗi lần thay đổi
-        var dateFromInput = document.getElementById("date_from");
-        var dateToInput = document.getElementById("date_to");
-
-        dateFromInput.addEventListener("change", function () {
-            localStorage.setItem("date_from", dateFromInput.value);
-        });
-
-        dateToInput.addEventListener("change", function () {
-            localStorage.setItem("date_to", dateToInput.value);
-        });
-
-        // Khôi phục trạng thái đã lưu khi trang được tải
-        window.onload = function () {
-            var savedDateFrom = localStorage.getItem("date_from");
-            var savedDateTo = localStorage.getItem("date_to");
-
-            if (savedDateFrom) {
-                dateFromInput.value = savedDateFrom;
-            }
-
-            if (savedDateTo) {
-                dateToInput.value = savedDateTo;
-            }
-        };
     </script>
 {% endblock %}
